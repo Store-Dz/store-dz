@@ -759,6 +759,7 @@
             margin-bottom: 25px;
             padding-bottom: 15px;
             border-bottom: 2px solid #2c5282;
+            position: relative;
         }
         
         .receipt-title {
@@ -821,6 +822,7 @@
             padding-bottom: 10px;
             border-bottom: 2px solid #dbeafe;
             font-size: 1.3rem;
+            text-align: right;
         }
         
         .receipt-actions {
@@ -1035,6 +1037,7 @@
             align-items: center;
             justify-content: center;
             gap: 5px;
+            text-align: center;
         }
 
         .price-title i {
@@ -1078,6 +1081,7 @@
             color: #e67e22;
             margin-top: 5px;
             font-weight: 600;
+            text-align: center;
         }
 
         @media (max-width: 480px) {
@@ -1141,32 +1145,25 @@
             font-weight: bold;
         }
         
-        .size-options {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+        .size-select-container {
             margin: 15px 0;
         }
         
-        .size-option {
-            padding: 12px;
+        .size-select {
+            width: 100%;
+            padding: 12px 15px;
             border: 2px solid #ddd;
             border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
+            font-size: 16px;
+            background-color: #f9fafb;
             transition: all 0.3s;
-            font-weight: 600;
         }
         
-        .size-option:hover {
+        .size-select:focus {
             border-color: #1a3a6d;
-            background-color: #f0f7ff;
-        }
-        
-        .size-option.selected {
-            border-color: #1a3a6d;
-            background-color: #1a3a6d;
-            color: white;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(26, 58, 109, 0.3);
+            background-color: white;
         }
         
         @media (max-width: 480px) {
@@ -1188,6 +1185,19 @@
             margin: 0 5px;
             padding: 5px;
             font-size: 0.95rem;
+        }
+        
+        /* تعديل عرض مربع الملاحظات */
+        #notes {
+            width: 100%;
+        }
+        
+        @media (min-width: 768px) {
+            #notes {
+                width: 50%;
+                margin: 0 auto;
+                display: block;
+            }
         }
     </style>
 </head>
@@ -1213,7 +1223,7 @@
         <header>
             <div class="logo">
                 <i class="fas fa-store"></i>
-                <h1>StoreDz - معطف أطفال تركي فاخر</h1>
+                <h1>StoreDz - ستور ديزاد</h1>
             </div>
             <p>إشتري الآن و الدفع عند الاستلام</p>
         </header>
@@ -1286,15 +1296,18 @@
                                 </div>
                             </div>
                             
-                            <!-- خيارات المقاس -->
+                            <!-- خيارات المقاس - تم تغييرها إلى قائمة منسدلة -->
                             <div class="detail-specs">
                                 <h3 class="spec-title">اختر المقاس</h3>
-                                <div class="size-options">
-                                    <div class="size-option" data-size="6">6 سنوات</div>
-                                    <div class="size-option" data-size="7">7 سنوات</div>
-                                    <div class="size-option" data-size="8">8 سنوات</div>
-                                    <div class="size-option" data-size="9">9 سنوات</div>
-                                    <div class="size-option" data-size="10">10 سنوات</div>
+                                <div class="size-select-container">
+                                    <select id="sizeSelect" class="size-select" required>
+                                        <option value="">-- اختر المقاس --</option>
+                                        <option value="6 سنوات">6 سنوات</option>
+                                        <option value="7 سنوات">7 سنوات</option>
+                                        <option value="8 سنوات">8 سنوات</option>
+                                        <option value="9 سنوات">9 سنوات</option>
+                                        <option value="10 سنوات">10 سنوات</option>
+                                    </select>
                                 </div>
                             </div>
                             
@@ -1425,7 +1438,7 @@
         
         <div class="receipt-container" id="receiptContainer">
             <div class="receipt-header">
-                <h2 class="receipt-title">StoreDz - معطف أطفال تركي فاخر</h2>
+                <h2 class="receipt-title">StoreDz - ستور ديزاد</h2>
                 <p class="receipt-subtitle">وصل تأكيد الطلبية</p>
             </div>
             
@@ -1536,9 +1549,9 @@
             "21 - سكيكدة", "22 - سيدي بلعباس", "23 - عنابة", "24 - قالمة", "25 - قسنطينة",
             "26 - المدية", "27 - مستغانm", "28 - المسيلة", "29 - معسكر", "30 - ورقلة",
             "31 - وهران", "32 - البيض", "33 - إيليزي", "34 - برج بوعريريج", "35 - بومرداس",
-            "36 - الطارف", "37 - تندوف", "38 - تيسمسيلت", "39 - الوادي", "40 - خنشلة",
+            "36 - الطارف", "37 - تندوف", "38 - تيسمسيلt", "39 - الوادي", "40 - خنشلة",
             "41 - سوق أهراس", "42 - تيبازة", "43 - ميلة", "44 - عين الدفلى", "45 - النعامة",
-            "46 - عين تموشنت", "47 - غرداية", "48 - غليزان", "49 - تيميمون", "50 - برج باجي مختار",
+            "46 - عين تموشنت", "47 - غرداية", "48 - غليزان", "49 - تimيمون", "50 - برج باجي مختار",
             "51 - أولاد جلال", "52 - بني عباس", "53 - عين صالح", "54 - عين قزام", "55 - تقرت",
             "56 - جانت", "57 - المغير", "58 - المنيعة"
         ];
@@ -1577,7 +1590,7 @@
         const notification = document.getElementById('notification');
         const mainProductImage = document.getElementById('mainProductImage');
         const colorOptions = document.querySelectorAll('.color-option');
-        const sizeOptions = document.querySelectorAll('.size-option');
+        const sizeSelect = document.getElementById('sizeSelect');
         const productQty = document.getElementById('productQty');
         const increaseQty = document.getElementById('increaseQty');
         const decreaseQty = document.getElementById('decreaseQty');
@@ -1658,13 +1671,9 @@
             });
         });
         
-        // إعداد خيارات المقاسات
-        sizeOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                sizeOptions.forEach(opt => opt.classList.remove('selected'));
-                option.classList.add('selected');
-                selectedSize = option.dataset.size;
-            });
+        // إعداد اختيار المقاس من القائمة المنسدلة
+        sizeSelect.addEventListener('change', () => {
+            selectedSize = sizeSelect.value;
         });
         
         // إعداد زيادة ونقصان الكمية
@@ -1742,7 +1751,7 @@
                 row.innerHTML = `
                     <td>${product.name}</td>
                     <td>${product.colorName}</td>
-                    <td>${product.size} سنوات</td>
+                    <td>${product.size}</td>
                     <td>${product.quantity}</td>
                     <td>${product.price.toLocaleString()} دج</td>
                     <td>${total.toLocaleString()} دج</td>
@@ -1783,7 +1792,7 @@
             }
             
             const productsDetails = products.map(p => 
-                `${p.name} - ${p.colorName} - ${p.size} سنوات (${p.quantity} × ${p.price.toLocaleString()} دج)`
+                `${p.name} - ${p.colorName} - ${p.size} (${p.quantity} × ${p.price.toLocaleString()} دج)`
             ).join("\n");
             
             const templateParams = {
@@ -1868,123 +1877,122 @@
                 productDiv.className = 'detail-item';
                 productDiv.innerHTML = `
                     <span class="detail-label">المنتج:</span>
-                    <span class="detail-value">${product.name} - ${product.colorName} - ${product.size} سنوات</span>
+                    <span class="detail-value">${product.name} - ${product.colorName} - ${product.size}</span>
                 `;
                 receiptProductsDetails.appendChild(productDiv);
                 
                 const quantityDiv = document.createElement('div');
-                quantityDiv.className = 'detail-item';
-                quantityDiv.innerHTML = `
-                    <span class="detail-label">الكمية:</span>
-                    <span class="detail-value">${product.quantity}</span>
-                `;
-                receiptProductsDetails.appendChild(quantityDiv);
-                
-                const priceDiv = document.createElement('div');
-                priceDiv.className = 'detail-item';
-                priceDiv.innerHTML = `
-                    <span class="detail-label">السعر:</span>
-                    <span class="detail-value">${product.price.toLocaleString()} دج</span>
-                `;
-                receiptProductsDetails.appendChild(priceDiv);
-                
-                const totalDiv = document.createElement('div');
-                totalDiv.className = 'detail-item highlight-row';
-                totalDiv.innerHTML = `
-                    <span class="detail-label">المجموع:</span>
-                    <span class="detail-value">${total.toLocaleString()} دج</span>
-                `;
-                receiptProductsDetails.appendChild(totalDiv);
-            });
+            quantityDiv.className = 'detail-item';
+            quantityDiv.innerHTML = `
+                <span class="detail-label">الكمية:</span>
+                <span class="detail-value">${product.quantity}</span>
+            `;
+            receiptProductsDetails.appendChild(quantityDiv);
             
-            receiptTotalAmount.textContent = productsTotal.toLocaleString() + ' دج';
+            const priceDiv = document.createElement('div');
+            priceDiv.className = 'detail-item';
+            priceDiv.innerHTML = `
+                <span class="detail-label">السعر:</span>
+                <span class="detail-value">${product.price.toLocaleString()} دج</span>
+            `;
+            receiptProductsDetails.appendChild(priceDiv);
             
-            document.querySelectorAll('.card, .actions, footer').forEach(el => {
-                el.style.display = 'none';
-            });
-            receiptContainer.style.display = 'block';
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const totalDiv = document.createElement('div');
+            totalDiv.className = 'detail-item highlight-row';
+            totalDiv.innerHTML = `
+                <span class="detail-label">المجموع:</span>
+                <span class="detail-value">${total.toLocaleString()} دج</span>
+            `;
+            receiptProductsDetails.appendChild(totalDiv);
+        });
+        
+        receiptTotalAmount.textContent = productsTotal.toLocaleString() + ' دج';
+        
+        document.querySelectorAll('.card, .actions, footer').forEach(el => {
+            el.style.display = 'none';
+        });
+        receiptContainer.style.display = 'block';
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    function showNotification(message, isError = false) {
+        const notification = document.getElementById('notification');
+        const icon = notification.querySelector('i');
+        const text = notification.querySelector('span');
+        
+        text.textContent = message;
+        notification.className = "notification";
+        
+        if (isError) {
+            notification.classList.add("error");
+            icon.className = "fas fa-exclamation-circle";
+        } else {
+            icon.className = "fas fa-check-circle";
         }
         
-        function showNotification(message, isError = false) {
-            const notification = document.getElementById('notification');
-            const icon = notification.querySelector('i');
-            const text = notification.querySelector('span');
-            
-            text.textContent = message;
-            notification.className = "notification";
-            
-            if (isError) {
-                notification.classList.add("error");
-                icon.className = "fas fa-exclamation-circle";
-            } else {
-                icon.className = "fas fa-check-circle";
-            }
-            
-            notification.classList.add("show");
-            
-            setTimeout(() => {
-                notification.classList.remove("show");
-            }, 3000);
-        }
+        notification.classList.add("show");
         
-        function resetForm() {
-            document.getElementById('fullName').value = '';
-            document.getElementById('phone').value = '';
-            stateSelect.value = '';
-            communeInput.value = '';
-            document.getElementById('notes').value = '';
-            shippingCompanySelect.value = '';
-            
-            products = [];
-            productQty.value = 1;
-            
-            // إعادة تعيين خيارات الألوان والمقاسات
-            colorOptions.forEach(opt => opt.classList.remove('selected'));
-            document.querySelector('.color-option[data-color="black"]').classList.add('selected');
-            selectedColor = "black";
-            mainProductImage.src = "https://raw.githubusercontent.com/Store-Dz/store-dz/refs/heads/main/noir.jpeg";
-            
-            sizeOptions.forEach(opt => opt.classList.remove('selected'));
-            selectedSize = "";
-            
-            // إعادة تعيين الصور المصغرة
-            thumbnails.forEach(thumb => thumb.classList.remove('active'));
-            document.querySelector('.gallery-thumbnail[data-color="black"]').classList.add('active');
-            
-            updateCartDisplay();
-            calculateTotal();
-        }
+        setTimeout(() => {
+            notification.classList.remove("show");
+        }, 3000);
+    }
+    
+    function resetForm() {
+        document.getElementById('fullName').value = '';
+        document.getElementById('phone').value = '';
+        stateSelect.value = '';
+        communeInput.value = '';
+        document.getElementById('notes').value = '';
+        shippingCompanySelect.value = '';
         
-        function printReceiptFunction() {
-            window.print();
-        }
+        products = [];
+        productQty.value = 1;
+        sizeSelect.value = '';
+        selectedSize = '';
         
-        function backToOrderFunction() {
-            document.querySelectorAll('.card, .actions, footer').forEach(el => {
-                el.style.display = '';
-            });
-            receiptContainer.style.display = 'none';
-        }
+        // إعادة تعيين خيارات الألوان
+        colorOptions.forEach(opt => opt.classList.remove('selected'));
+        document.querySelector('.color-option[data-color="black"]').classList.add('selected');
+        selectedColor = "black";
+        mainProductImage.src = "https://raw.githubusercontent.com/Store-Dz/store-dz/refs/heads/main/noir.jpeg";
         
-        function initApp() {
-            populateStates();
-            updateCartDisplay();
-            
-            submitBtn.addEventListener('click', submitOrder);
-            resetBtn.addEventListener('click', resetForm);
-            addToCartFromDetail.addEventListener('click', addProductToCart);
-            
-            helpButton.addEventListener('click', function() {
-                contactButtons.classList.toggle('show');
-            });
-            
-            printReceipt.addEventListener('click', printReceiptFunction);
-            backToOrder.addEventListener('click', backToOrderFunction);
-        }
+        // إعادة تعيين الصور المصغرة
+        thumbnails.forEach(thumb => thumb.classList.remove('active'));
+        document.querySelector('.gallery-thumbnail[data-color="black"]').classList.add('active');
         
-        window.addEventListener('DOMContentLoaded', initApp);
-    </script>
+        updateCartDisplay();
+        calculateTotal();
+    }
+    
+    function printReceiptFunction() {
+        window.print();
+    }
+    
+    function backToOrderFunction() {
+        document.querySelectorAll('.card, .actions, footer').forEach(el => {
+            el.style.display = '';
+        });
+        receiptContainer.style.display = 'none';
+    }
+    
+    function initApp() {
+        populateStates();
+        updateCartDisplay();
+        
+        submitBtn.addEventListener('click', submitOrder);
+        resetBtn.addEventListener('click', resetForm);
+        addToCartFromDetail.addEventListener('click', addProductToCart);
+        
+        helpButton.addEventListener('click', function() {
+            contactButtons.classList.toggle('show');
+        });
+        
+        printReceipt.addEventListener('click', printReceiptFunction);
+        backToOrder.addEventListener('click', backToOrderFunction);
+    }
+    
+    window.addEventListener('DOMContentLoaded', initApp);
+</script>
 </body>
 </html>
