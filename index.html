@@ -1674,7 +1674,26 @@
             gap: 10px;
             padding: 10px 15px;
         }
-    </style>
+    
+.site-footer {
+    background: #f1f1f1;
+    text-align: center;
+    padding: 15px;
+    font-size: 14px;
+    color: #333;
+    border-top: 2px solid #ddd;
+    margin-top: 30px;
+}
+.site-footer .footer-link {
+    color: #EB7500;
+    font-weight: bold;
+    text-decoration: none;
+}
+.site-footer .footer-link:hover {
+    text-decoration: underline;
+}
+
+</style>
 </head>
 <body>
     <!-- Header الجديد -->
@@ -1822,7 +1841,20 @@
                 <i class="fas fa-sign-in-alt"></i>
                 <span>Sign In</span>
             </li>
+            
             <li class="sidebar-menu-item">
+                <i class="fas fa-gift"></i>
+                <span>Offres spéciales</span>
+            </li>
+            <li class="sidebar-menu-item">
+                <i class="fas fa-tags"></i>
+                <span>Promotions</span>
+            </li>
+            <li class="sidebar-menu-item">
+                <i class="fas fa-truck"></i>
+                <span>Livraison gratuite</span>
+            </li>
+<li class="sidebar-menu-item">
                 <i class="fas fa-heart"></i>
                 <span>Favorites</span>
             </li>
@@ -1913,12 +1945,29 @@
                 </div>
                 <div class="edit-form-group">
                     <label for="productSubcategory">Subcategory</label>
-                    <input type="text" class="edit-form-control" id="productSubcategory" placeholder="Enter subcategory">
+                    <select class="edit-form-control" id="productSubcategory"></select>
                 </div>
+                
+                <div class="edit-form-group">
+                    <label>Gérer les tailles</label>
+                    <div id="sizesContainer" class="edit-sizes"></div>
+                    <button type="button" class="add-product-btn" id="addSizeBtn">+ Ajouter taille</button>
+                </div>
+
                 <div class="edit-form-group">
                     <label>Sizes (comma separated)</label>
                     <input type="text" class="edit-form-control" id="productSizes" placeholder="e.g. S, M, L, XL">
                 </div>
+                
+                <div class="edit-form-group">
+                    <label>Ajouter une image (upload)</label>
+                    <input type="file" id="uploadImageInput" accept="image/*">
+<div class="edit-form-group">
+    <label>Ajouter plusieurs images pour la description</label>
+    <input type="file" id="uploadDescImagesInput" accept="image/*" multiple>
+</div>
+                </div>
+
                 <div class="edit-form-group">
                     <label>Product Images (URLs, one per line)</label>
                     <textarea class="edit-form-control" id="productImages" rows="3" placeholder="Enter image URLs, one per line"></textarea>
@@ -3455,6 +3504,271 @@ let products = JSON.parse(localStorage.getItem('products')) || [
                 localStorage.setItem('darkMode', null);
             }
         }
-    </script>
-</body>
-</html>
+    
+// --- Populate subcategory select dynamically ---
+function populateSubcategories() {
+    const select = document.getElementById('productSubcategory');
+    if (!select) return;
+    const subs = [...new Set(products.map(p => p.subcategory).filter(Boolean))];
+    select.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+populateSubcategories();
+
+// --- Manage sizes dynamically ---
+const sizesContainer = document.getElementById('sizesContainer');
+const addSizeBtn = document.getElementById('addSizeBtn');
+if (addSizeBtn) {
+    addSizeBtn.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'edit-form-control';
+        input.placeholder = 'Nouvelle taille';
+        sizesContainer.appendChild(input);
+    });
+}
+
+// --- Handle image upload ---
+const uploadInput = document.getElementById('uploadImageInput');
+if (uploadInput) {
+    uploadInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const textarea = document.getElementById('productImages');
+                textarea.value += (textarea.value ? '\n' : '') + reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+// --- Sidebar filtering ---
+document.querySelectorAll('.sidebar-menu-item').forEach(item => {
+    item.addEventListener('click', () => {
+        const txt = item.innerText.trim();
+        if (txt === 'Favorites') {
+            const favIds = JSON.parse(localStorage.getItem('favorites')||'[]');
+            renderProducts(products.filter(p => favIds.includes(p.id)));
+        } else if (txt === 'Offres spéciales') {
+            renderProducts(products.filter(p => p.category==='offres'));
+        } else if (txt === 'Promotions') {
+            renderProducts(products.filter(p => p.category==='promotions'));
+        } else if (txt === 'Livraison gratuite') {
+            renderProducts(products.filter(p => p.category==='livraison'));
+        }
+    });
+});
+
+// --- Favorites toggle ---
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.favorite-icon')) {
+        const card = e.target.closest('.product-card');
+        if (!card) return;
+        const id = parseInt(card.dataset.id);
+        let favs = JSON.parse(localStorage.getItem('favorites')||'[]');
+        if (favs.includes(id)) {
+            favs = favs.filter(x=>x!==id);
+        } else {
+            favs.push(id);
+        }
+        localStorage.setItem('favorites', JSON.stringify(favs));
+    }
+});
+
+
+// Override save for admin special product
+const addSpecialProductBtn = document.getElementById('addSpecialProductBtn');
+if (addSpecialProductBtn) {
+    addSpecialProductBtn.addEventListener('click', () => {
+        const select = document.getElementById('specialCategorySelect');
+        const cat = select.value;
+        document.getElementById('productModal').classList.add('active');
+        document.getElementById('productModalTitle').innerText = "Ajouter un produit (" + select.options[select.selectedIndex].text + ")";
+        document.getElementById('saveProductBtn').onclick = () => {
+            const name = document.getElementById('productName').value;
+            const desc = document.getElementById('productDescription').value;
+            const price = parseFloat(document.getElementById('productPrice').value);
+            const subcat = document.getElementById('productSubcategory').value;
+            const sizeInputs = document.querySelectorAll('#sizesContainer input');
+            const sizes = Array.from(sizeInputs).map(i=>i.value).filter(Boolean);
+            const images = document.getElementById('productImages').value.split('\n').map(s=>s.trim()).filter(Boolean);
+            const newProd = {
+                id: Date.now(),
+                name, description: desc, price, oldPrice: price, discount: 0,
+                category: cat, subcategory: subcat, image: images[0]||'', sizes, images
+            };
+            products.push(newProd);
+            localStorage.setItem('products', JSON.stringify(products));
+            document.getElementById('productModal').classList.remove('active');
+            renderProducts();
+        };
+    });
+}
+
+</script>
+
+<footer class="site-footer">
+    <p>© 2025 <a href="tel:0541376146" class="footer-link">Developed by ANOUAR ANNABI</a>. All Rights Reserved.</p>
+</footer>
+
+<script>
+// منع الاضافة المزدوجة
+let isSaving = false;
+
+// حفظ منتج جديد
+document.getElementById("saveProductBtn").addEventListener("click", function () {
+    if (isSaving) return; // منع الضغط المزدوج
+    isSaving = true;
+
+    const name = document.getElementById("productName").value.trim();
+    const description = document.getElementById("productDescription").value.trim();
+    const price = parseFloat(document.getElementById("productPrice").value);
+    const category = document.getElementById("productCategory").value;
+    const subcategory = document.getElementById("productSubcategory").value;
+    const sizes = document.getElementById("productSizes").value.split(",").map(s => s.trim()).filter(s => s);
+
+    let images = document.getElementById("productImages").value.split("\n").map(s => s.trim()).filter(s => s);
+
+    const uploadInput = document.getElementById("uploadImageInput");
+    if (uploadInput.files.length > 0) {
+        const file = uploadInput.files[0];
+        images.unshift(URL.createObjectURL(file));
+    }
+
+    const descInput = document.getElementById("uploadDescImagesInput");
+    if (descInput.files.length > 0) {
+        for (let f of descInput.files) {
+            images.push(URL.createObjectURL(f));
+        }
+    }
+
+    // تحقق من الحقول الإلزامية
+    if (!name || !price || !category) {
+        alert("⚠️ يرجى ملء جميع الحقول المطلوبة قبل الحفظ.");
+        isSaving = false;
+        return;
+    }
+
+    const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+
+    const newProduct = {
+        id: newId,
+        name,
+        description,
+        price,
+        oldPrice: price,
+        discount: 0,
+        category,
+        subcategory,
+        image: images[0] || "",
+        sizes,
+        images
+    };
+
+    products.push(newProduct);
+    localStorage.setItem("products", JSON.stringify(products));
+
+    if (typeof renderProducts === "function") {
+        renderProducts(products);
+    }
+
+    document.getElementById("productModal").classList.remove("active");
+
+    // إعادة تعيين حالة الحفظ بعد ثانيتين
+    setTimeout(() => { isSaving = false; }, 2000);
+});
+</script>
+
+<script>
+// --- تهيئة المنتجات ---
+let defaultProducts = [
+    {
+        id: 1,
+        name: "Ensemble garçon sport bleu",
+        price: 4200,
+        oldPrice: 5500,
+        discount: 24,
+        category: "kids",
+        subcategory: "ensembles",
+        image: "https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=500",
+        description: "Ensemble sport confortable pour garçon.",
+        sizes: ["3-6 mois", "6-12 mois", "1-2 ans"],
+        images: [
+            "https://images.unsplash.com/photo-1519457431-44ccd64a579b?w=500",
+            "https://images.unsplash.com/photo-1508747703725-7197776375cd?w=500"
+        ]
+    }
+];
+let storedProducts = JSON.parse(localStorage.getItem("products"));
+let products = storedProducts && storedProducts.length > 0 ? storedProducts : defaultProducts;
+
+// --- تحويل ملف لصورة Base64 ---
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
+
+// --- حفظ منتج جديد ---
+document.getElementById("saveProductBtn").addEventListener("click", async function () {
+    const name = document.getElementById("productName").value.trim();
+    const description = document.getElementById("productDescription").value.trim();
+    const price = parseFloat(document.getElementById("productPrice").value);
+    const category = document.getElementById("productCategory").value;
+    const subcategory = document.getElementById("productSubcategory").value;
+    const sizes = document.getElementById("productSizes").value.split(",").map(s => s.trim()).filter(s => s);
+
+    let images = document.getElementById("productImages").value.split("\n").map(s => s.trim()).filter(s => s);
+
+    // معالجة رفع صورة رئيسية
+    const uploadInput = document.getElementById("uploadImageInput");
+    if (uploadInput.files.length > 0) {
+        const file = uploadInput.files[0];
+        const base64 = await fileToBase64(file);
+        images.unshift(base64);
+    }
+
+    // معالجة صور الوصف
+    const descInput = document.getElementById("uploadDescImagesInput");
+    if (descInput.files.length > 0) {
+        for (let f of descInput.files) {
+            const base64 = await fileToBase64(f);
+            images.push(base64);
+        }
+    }
+
+    if (!name || !price || !category) {
+        alert("⚠️ يرجى ملء جميع الحقول المطلوبة قبل الحفظ.");
+        return;
+    }
+
+    const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+
+    const newProduct = {
+        id: newId,
+        name,
+        description,
+        price,
+        oldPrice: price,
+        discount: 0,
+        category,
+        subcategory,
+        image: images[0] || "",
+        sizes,
+        images
+    };
+
+    products.push(newProduct);
+    localStorage.setItem("products", JSON.stringify(products));
+
+    if (typeof renderProducts === "function") {
+        renderProducts(products);
+    }
+
+    document.getElementById("productModal").classList.remove("active");
+});
+</script>
