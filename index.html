@@ -3778,3 +3778,221 @@ document.getElementById("saveProductBtn").addEventListener("click", async functi
     document.getElementById("productModal").classList.remove("active");
 });
 </script>
+
+<!-- Telegram order-sender script (injected) -->
+<script>
+(function(){
+  // CONFIG: token and chat_id (you asked to include them directly)
+  const TELEGRAM_BOT_TOKEN = "8291686978:AAHqApsZwfcZv7-pPAPnj5iXsT_ThllvhZA";
+  const TELEGRAM_CHAT_ID = "-1002919459159";
+  const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  // helper to build order number like MMDDHHMM (e.g., 09212138)
+  function buildOrderNumber() {
+    const d = new Date();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const hh = String(d.getHours()).padStart(2,'0');
+    const min = String(d.getMinutes()).padStart(2,'0');
+    return `${mm}${dd}${hh}${min}`;
+  }
+
+  // Try to get cart items from multiple possible locations
+  function getCartItems() {
+    // 1) try window.cart or window.cartItems variable
+    try {
+      if (window.cart && Array.isArray(window.cart)) return window.cart;
+      if (window.cartItems && Array.isArray(window.cartItems)) return window.cartItems;
+    } catch(e){}
+
+    // 2) try localStorage keys (common names)
+    const keys = ["cart", "cartItems", "myCart", "basket"];
+    for (const k of keys) {
+      try {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+        if (parsed && parsed.items && Array.isArray(parsed.items)) return parsed.items;
+      } catch(e){}
+    }
+
+    // 3) try reading DOM #cartItems .cart-item elements
+    try {
+      const container = document.getElementById("cartItems");
+      if (container) {
+        const nodes = Array.from(container.querySelectorAll(".cart-item"));
+        if (nodes.length) {
+          return nodes.map(n=>{
+            const title = n.querySelector(".cart-item-title") ? n.querySelector(".cart-item-title").textContent.trim() : (n.querySelector("h4")?n.querySelector("h4").textContent.trim():"Product");
+            const price = n.querySelector(".cart-item-price") ? n.querySelector(".cart-item-price").textContent.replace(/[^\d.,]/g,'').trim() : "";
+            const qtyInput = n.querySelector(".cart-quantity-input") || n.querySelector("input[type='number']");
+            const qty = qtyInput ? (qtyInput.value || qtyInput.getAttribute('value') || 1) : 1;
+            return { name: title, price: price, quantity: qty };
+          });
+        }
+      }
+    } catch(e){}
+
+    // 4) fallback: no items
+    return [];
+  }
+
+  // Format items for Telegram message
+  function formatItems(items) {
+    if (!items || !items.length) return "لا توجد منتجات في السلة.";
+    let out = "";
+    let i = 1;
+    for (const it of items) {
+      const name = it.name || it.title || it.productName || "Product";
+      const price = (it.price !== undefined) ? it.price : (it.currentPrice || it.priceText || "");
+      const qty = it.quantity || it.qty || 1;
+      out += `${i}. ${name} — QTY: ${qty} — Price: ${price}\n`;
+      i++;
+    }
+    return out;
+  }
+
+  
+  // Build the order message (Proposal 3 formatting + total)
+  function buildMessage(orderNum, customer, items, subtotal, total) {
+    let msg = "";
+    msg += "━━━━━━━━━━━━━━\n";
+    msg += `📦 Order #${orderNum}\n`;
+    msg += "━━━━━━━━━━━━━━\n";
+    msg += `👤 ${customer.name}\n`;
+    msg += `🌍 ${customer.wilaya}\n`;
+    msg += `🏠 ${customer.address}\n`;
+    msg += `📞 ${customer.phone}\n`;
+    msg += "━━━━━━━━━━━━━━\n";
+    msg += "🛍️ Products:\n";
+    if (items && items.length) {
+      items.forEach((it, idx)=>{
+        const name = it.name || it.title || "Product";
+        const price = (it.price!==undefined)?it.price:"";
+        const qty = it.quantity || 1;
+        msg += `• ${name}\n  QTY: ${qty} | Price: ${price} DA\n`;
+      });
+    } else {
+      msg += "No products found.\n";
+    }
+    msg += "━━━━━━━━━━━━━━\n";
+    msg += `💰 Subtotal: ${subtotal} DA\n`;
+    msg += `🚚 Delivery: 600 DA\n`;
+    msg += `🔻 Total: ${total} DA\n`;
+    msg += "━━━━━━━━━━━━━━\n";
+    msg += `⏱️ ${new Date().toLocaleString()}\n`;
+    return msg;
+  }
+
+  // Send to telegram
+  async function sendToTelegram(text) {
+    try {
+      const resp = await fetch(TELEGRAM_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text })
+      });
+      return resp.json();
+    } catch(err) {
+      return { ok: false, error: err.message || String(err) };
+    }
+  }
+
+  // Main handler bound to confirm button
+  async function onConfirmClick(e) {
+    e.preventDefault();
+    // gather customer info from known ids
+    const customer = {
+      name: (document.getElementById('customerName') && document.getElementById('customerName').value) || "",
+      wilaya: (document.getElementById('customerWilaya') && document.getElementById('customerWilaya').value) || "",
+      address: (document.getElementById('customerAddress') && document.getElementById('customerAddress').value) || "",
+      phone: (document.getElementById('customerPhone') && document.getElementById('customerPhone').value) || ""
+    };
+
+    // validate basic fields
+    if (!customer.name || !customer.phone || !customer.address) {
+      // show simple notification
+      const notif = document.getElementById('notification');
+      const notifText = document.getElementById('notificationText');
+      if (notif && notifText) {
+        notifText.textContent = "يرجى ملء الاسم، الهاتف، والعنوان قبل التأكيد.";
+        notif.classList.add('active');
+        setTimeout(()=>notif.classList.remove('active'), 3500);
+      } else {
+        alert("يرجى ملء الاسم، الهاتف، والعنوان قبل التأكيد.");
+      }
+      return;
+    }
+
+    const items = getCartItems();
+    const itemsText = formatItems(items);
+    const orderNum = buildOrderNumber();
+
+    const subtotal = items.reduce((sum,it)=> sum + (parseFloat(it.price)||0) * (parseInt(it.quantity)||1),0);
+    const delivery = 600;
+    const total = subtotal + delivery;
+    const message = buildMessage(orderNum, customer, items, subtotal, total);
+
+    // send
+    const result = await sendToTelegram(message);
+
+    // show success or error
+    if (result && result.ok) {
+      // display order success UI if present
+      const orderSuccess = document.getElementById('orderSuccess');
+      const orderNumberEl = document.getElementById('orderNumber');
+      const checkoutForm = document.getElementById('checkoutForm');
+      const cartSidebar = document.getElementById('cartSidebar');
+      if (orderNumberEl) orderNumberEl.textContent = orderNum;
+      if (orderSuccess) orderSuccess.style.display = 'block';
+      if (checkoutForm) checkoutForm.style.display = 'none';
+      // clear cart from common storage locations
+      try { localStorage.removeItem('cart'); localStorage.removeItem('cartItems'); } catch(e){}
+      // update cart count and UI if exists
+      try {
+        const cartCount = document.querySelector('.cart-count');
+        if (cartCount) cartCount.textContent = '0';
+        const cartItemsContainer = document.getElementById('cartItems');
+        if (cartItemsContainer) cartItemsContainer.innerHTML = '<p class="empty-cart-message">Votre panier est vide</p>';
+        const commanderBtn = document.getElementById('commanderBtn');
+        if (commanderBtn) commanderBtn.style.display = 'none';
+      } catch(e){}
+      // small notification
+      const notif = document.getElementById('notification');
+      const notifText = document.getElementById('notificationText');
+      if (notif && notifText) {
+        notifText.textContent = "تم إرسال الطلبية بنجاح!";
+        notif.classList.add('active');
+        setTimeout(()=>notif.classList.remove('active'), 3000);
+      } else {
+        alert("Order sent successfully!");
+      }
+    } else {
+      // error
+      const errMsg = (result && (result.description || result.error)) || JSON.stringify(result);
+      alert("خطأ في إرسال الطلب: " + errMsg);
+      console.error("Telegram send error:", result);
+    }
+  }
+
+  // Attach handler to confirm button
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('confirmOrder');
+    if (btn) btn.addEventListener('click', onConfirmClick);
+    // also attach to any other confirm buttons if present
+    const btn2 = document.getElementById('commanderBtn');
+    if (btn2) btn2.addEventListener('click', function(){
+      // open checkout form if hidden
+      const cf = document.getElementById('checkoutForm');
+      if (cf) {
+        cf.style.display = 'block';
+        // scroll cart into view
+        const cs = document.getElementById('cartSidebar');
+        if (cs) cs.scrollTop = 0;
+      }
+    });
+  });
+})();
+</script>
+<!-- End injection -->
