@@ -664,8 +664,6 @@
             background: rgba(45, 45, 45, 0.9);
         }
         
-        
-        
         body.dark-mode .favorite-icon:hover {
             background: rgba(45, 45, 45, 1);
         }
@@ -708,8 +706,6 @@
             color: #28a745;
             font-size: 15px;
         }
-        
-       
         
         /* تحسين السلة لتكون متجاوبة */
         .cart-sidebar {
@@ -2244,13 +2240,27 @@
                 <input type="tel" class="form-control" id="customerPhone" placeholder="Votre numéro de téléphone">
             </div>
             
+            <!-- إضافة حقل اختيار شركة التوصيل -->
+            <h3>Compagnie de livraison</h3>
+            <div class="form-group">
+                <label for="deliveryCompany">Choisissez la compagnie de livraison *</label>
+                <select class="form-control" id="deliveryCompany" required>
+                    <option value="">Sélectionnez une compagnie</option>
+                    <option value="Zrexpress">Zrexpress</option>
+                    <option value="Worldexpress">Worldexpress</option>
+                    <option value="Yalidin">Yalidin</option>
+                    <option value="Dhd">Dhd</option>
+                    <option value="Kazitour">Kazitour</option>
+                </select>
+            </div>
+            
             <h3>Méthode de livraison</h3>
             <div class="delivery-options">
-                <div class="delivery-option" data-method="home" data-price="850">
+                <div class="delivery-option" data-method="home" data-price="850" data-company="">
                     <input type="radio" name="deliveryMethod" id="deliveryHome" value="home" checked>
                     <label for="deliveryHome">Livraison à domicile - 850 DA</label>
                 </div>
-                <div class="delivery-option" data-method="office" data-price="450">
+                <div class="delivery-option" data-method="office" data-price="450" data-company="">
                     <input type="radio" name="deliveryMethod" id="deliveryOffice" value="office">
                     <label for="deliveryOffice">Livraison au bureau - 450 DA</label>
                 </div>
@@ -2280,6 +2290,7 @@
                     <p><strong>Téléphone:</strong> <span id="receiptCustomerPhone"></span></p>
                     <p><strong>Adresse:</strong> <span id="receiptCustomerAddress"></span>, <span id="receiptCustomerWilaya"></span></p>
                     <p><strong>Livraison:</strong> <span id="receiptDeliveryMethod"></span></p>
+                    <p><strong>Compagnie:</strong> <span id="receiptDeliveryCompany"></span></p>
                 </div>
                 
                 <div class="receipt-items" id="receiptItems">
@@ -2573,6 +2584,7 @@
         const imageUpload = document.getElementById('imageUpload');
         const imagePreview = document.getElementById('imagePreview');
         const shippingCostElement = document.getElementById('shippingCost');
+        const deliveryCompanySelect = document.getElementById('deliveryCompany');
 
         // تفريغ السلة
         let cart = [];
@@ -2838,6 +2850,14 @@
             // أحداث التوصيل
             document.querySelectorAll('input[name="deliveryMethod"]').forEach(radio => {
                 radio.addEventListener('change', updateShippingCost);
+            });
+            
+            // مستمع حدث لاختيار شركة التوصيل
+            deliveryCompanySelect.addEventListener('change', function() {
+                const selectedCompany = this.value;
+                document.querySelectorAll('.delivery-option').forEach(option => {
+                    option.setAttribute('data-company', selectedCompany);
+                });
             });
         }
 
@@ -3685,10 +3705,17 @@
             const phone = document.getElementById('customerPhone').value;
             const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked').value;
             const deliveryPrice = parseInt(document.querySelector('input[name="deliveryMethod"]:checked').parentElement.getAttribute('data-price'));
+            const deliveryCompany = document.getElementById('deliveryCompany').value;
             
             // التحقق من صحة البيانات
             if (!name || !wilaya || !address || !phone) {
                 showNotification('Veuillez remplir tous les champs obligatoires!');
+                return;
+            }
+            
+            // التحقق من اختيار شركة التوصيل
+            if (!deliveryCompany) {
+                showNotification('Veuillez choisir une compagnie de livraison!');
                 return;
             }
             
@@ -3729,6 +3756,7 @@
                 customerAddress: address,
                 customerPhone: phone,
                 deliveryMethod: deliveryMethod,
+                deliveryCompany: deliveryCompany,
                 deliveryPrice: deliveryPrice,
                 cart: [...cart],
                 date: now.toLocaleString(),
@@ -3746,7 +3774,7 @@
             orderSuccess.style.display = 'block';
             
             // إرسال الطلب إلى التليجرام
-            sendOrderToTelegram(orderNumber, name, wilaya, address, phone, deliveryMethod, deliveryPrice);
+            sendOrderToTelegram(orderNumber, name, wilaya, address, phone, deliveryMethod, deliveryCompany, deliveryPrice);
         }
 
         // تحديث وصل الطلب
@@ -3759,6 +3787,7 @@
             document.getElementById('receiptCustomerWilaya').textContent = order.customerWilaya;
             document.getElementById('receiptDeliveryMethod').textContent = 
                 order.deliveryMethod === 'home' ? 'Livraison à domicile' : 'Livraison au bureau';
+            document.getElementById('receiptDeliveryCompany').textContent = order.deliveryCompany;
             
             const receiptItems = document.getElementById('receiptItems');
             receiptItems.innerHTML = '';
@@ -3792,6 +3821,7 @@
             receiptText += `🌍 ${currentOrder.customerWilaya}\n`;
             receiptText += `🏠 ${currentOrder.customerAddress}\n`;
             receiptText += `🚚 ${currentOrder.deliveryMethod === 'home' ? 'Livraison à domicile' : 'Livraison au bureau'} - ${currentOrder.deliveryPrice} DA\n`;
+            receiptText += `🏢 Compagnie: ${currentOrder.deliveryCompany}\n`;
             receiptText += "━━━━━━━━━━━━━━\n";
             receiptText += "🛍️ Produits:\n";
             
@@ -3837,7 +3867,91 @@
             // إعادة تعيين الطلب الحالي
             currentOrder = null;
             
-            showNotification('Panier vidé. Bon shopping!', true);
+            // إعادة تعيين النموذج
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerWilaya').value = '';
+            document.getElementById('customerAddress').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('deliveryCompany').value = '';
+            
+            // إعادة عرض الصفحة الرئيسية
+            showMainPage();
+        }
+
+        // إرسال الطلب إلى التليجرام
+        function sendOrderToTelegram(orderNumber, name, wilaya, address, phone, deliveryMethod, deliveryCompany, deliveryPrice) {
+            // حساب الإجمالي
+            const subtotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+            const total = subtotal + deliveryPrice;
+            
+            // بناء الرسالة
+            let message = `🛒 NOUVELLE COMMANDE #${orderNumber}\n\n`;
+            message += "━━━━━━━━━━━━\n";
+            message += `👤 CLIENT: ${name}\n`;
+            message += `📞 TÉLÉPHONE: ${phone}\n`;
+            message += `🌍 WILAYA: ${wilaya}\n`;
+            message += `🏠 ADRESSE: ${address}\n`;
+            message += `🚚 ${deliveryMethod === 'home' ? 'Livraison à domicile' : 'Livraison au bureau'} - ${deliveryPrice} DA\n`;
+            message += `🏢 Compagnie: ${deliveryCompany}\n\n`;
+            message += "━━━━━━━━━━━━\n";
+            message += `🛍️ PRODUITS:\n`;
+            
+            cart.forEach(item => {
+                message += `• ${item.name} (${item.quantity}x) - ${item.price} DA\n`;
+                if (item.size) message += `  Taille: ${item.size}\n`;
+                if (item.color) message += `  Couleur: ${item.color}\n`;
+            });
+            
+            message += "━━━━━━━━━━━━\n";
+            message += `\n💰 SOUS-TOTAL: ${subtotal.toLocaleString()} DA\n`;
+            message += `🚚 LIVRAISON: ${deliveryPrice} DA\n`;
+            message += `🔻 TOTAL: ${total.toLocaleString()} DA\n`;
+            
+            // إرسال الرسالة إلى التليجرام (استبدل TOKEN و CHAT_ID بقيم حقيقية)
+            const telegramBotToken = "8291686978:AAHqApsZwfcZv7-pPAPnj5iXsT_ThllvhZA"; // استبدل برمز البوت الخاص بك
+            const telegramChatId = "-1002919459159"; // استبدل برقم الدردشة الخاص بك
+            
+            // إذا لم يتم تعيين الرموز، يتم عرض رسالة تحذير
+            if (telegramBotToken === 'YOUR_BOT_TOKEN' || telegramChatId === 'YOUR_CHAT_ID') {
+                console.log('Telegram bot not configured. Message would be:');
+                console.log(message);
+                return;
+            }
+            
+            // إرسال الطلب إلى التليجرام
+            const url = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: telegramChatId,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Message sent to Telegram:', data);
+            })
+            .catch(error => {
+                console.error('Error sending message to Telegram:', error);
+            });
+        }
+
+        // التبديل بين وضع الظلام والوضع العادي
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', null);
+            }
         }
 
         // إغلاق السلة
@@ -3845,168 +3959,117 @@
             cartSidebar.classList.remove('active');
             overlay.classList.remove('active');
             document.body.style.overflow = 'auto';
+            
+            // إعادة تعيين النموذج إذا لم يتم تقديم الطلب
+            if (!currentOrder) {
+                checkoutForm.style.display = 'none';
+                orderSuccess.style.display = 'none';
+                commanderBtn.style.display = 'block';
+            }
         }
 
-        // إدارة المفضلة
+        // التبديل بين المنتجات المفضلة
         function toggleFavorite(productId, icon) {
             const index = favoriteProducts.indexOf(productId);
-            const heartIcon = icon.querySelector('i');
             
             if (index === -1) {
-                // إضافة إلى المفضلة
                 favoriteProducts.push(productId);
                 icon.classList.add('active');
-                heartIcon.classList.remove('far');
-                heartIcon.classList.add('fas');
+                icon.innerHTML = '<i class="fas fa-heart"></i>';
                 showNotification('Produit ajouté aux favoris!');
             } else {
-                // إزالة من المفضلة
                 favoriteProducts.splice(index, 1);
                 icon.classList.remove('active');
-                heartIcon.classList.remove('fas');
-                heartIcon.classList.add('far');
+                icon.innerHTML = '<i class="far fa-heart"></i>';
                 showNotification('Produit retiré des favoris!');
             }
             
-            // حفظ في localStorage
             localStorage.setItem('favorites', JSON.stringify(favoriteProducts));
         }
 
-        // تصفية المنتجات حسب التصنيف
+        // تصفية المنتجات حسب الفئة
         function filterProductsByCategory(category) {
-            const products = document.querySelectorAll('.product-card');
+            const productCards = document.querySelectorAll('.product-card');
             
-            if (category === 'all') {
-                products.forEach(product => {
-                    product.style.display = 'block';
-                });
-                return;
-            }
-            
-            products.forEach(product => {
-                const productCategory = product.getAttribute('data-category');
-                if (productCategory === category) {
-                    product.style.display = 'block';
+            productCards.forEach(card => {
+                if (category === 'all' || card.getAttribute('data-category') === category) {
+                    card.style.display = 'block';
                 } else {
-                    product.style.display = 'none';
+                    card.style.display = 'none';
                 }
             });
         }
 
-        // البحث عن المنتجات
-        function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase();
-            
-            // إذا كنا في صفحة تفاصيل المنتج، نعود إلى الصفحة الرئيسية
-            if (currentPage === 'product-detail') {
-                showMainPage();
-            }
-            
-            const products = document.querySelectorAll('.product-card');
-            
-            products.forEach(product => {
-                const productName = product.getAttribute('data-name').toLowerCase();
-                if (productName.includes(searchTerm)) {
-                    product.style.display = 'block';
-                } else {
-                    product.style.display = 'none';
-                }
-            });
-        }
-
-        // تطبيق فلاتر المنتجات
+        // تطبيق الفلاتر على المنتجات
         function applyProductFilters() {
             const maxPrice = parseInt(priceRange.value);
             const selectedSizes = Array.from(document.querySelectorAll('.size-filter.selected')).map(el => el.getAttribute('data-size'));
             const selectedColors = Array.from(document.querySelectorAll('.color-filter.selected')).map(el => el.getAttribute('data-color'));
             
-            const products = document.querySelectorAll('.product-card');
+            const productCards = document.querySelectorAll('.product-card');
             
-            products.forEach(product => {
-                const productPrice = parseInt(product.getAttribute('data-price'));
-                const productCategory = product.getAttribute('data-category');
+            productCards.forEach(card => {
+                const price = parseInt(card.getAttribute('data-price'));
+                const category = card.getAttribute('data-category');
                 
-                // تطبيق الفلترة حسب السعر
-                if (productPrice > maxPrice) {
-                    product.style.display = 'none';
-                    return;
+                let show = price <= maxPrice;
+                
+                // إذا تم تحديد أحجام، التحقق من تطابق المنتج معها
+                if (selectedSizes.length > 0) {
+                    // في هذا المثال، نفترض أن كل بطاقة منتج تحتوي على أحجام
+                    // في التطبيق الحقيقي، قد تحتاج إلى تخزين الأحجام في سمة بيانات
+                    show = show && selectedSizes.some(size => {
+                        // هذه منطق مبسط - في التطبيق الحقيقي تحتاج إلى تخزين أحجام المنتج في DOM
+                        return true; // مؤقتاً، سنقوم بعرض جميع المنتجات
+                    });
                 }
                 
-                // إذا لم يكن هناك فلاتر أخرى، عرض المنتج
-                if (selectedSizes.length === 0 && selectedColors.length === 0) {
-                    product.style.display = 'block';
-                    return;
+                // نفس الشيء للألوان
+                if (selectedColors.length > 0) {
+                    show = show && selectedColors.some(color => {
+                        // منطق مبسط
+                        return true; // مؤقتاً، سنقوم بعرض جميع المنتجات
+                    });
                 }
                 
-                // في هذا المثال، لا توجد بيانات عن الألوان والمقاسات في HTML
-                // في تطبيق حقيقي، يجب إضافة هذه البيانات كسمات data
-                product.style.display = 'block';
+                card.style.display = show ? 'block' : 'none';
             });
             
+            // إغلاق الفلتر
             filterSidebar.classList.remove('active');
             overlay.classList.remove('active');
         }
 
-        // تبديل وضع الظلام
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-            if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                localStorage.setItem('darkMode', null);
+        // البحث عن المنتجات
+        function performSearch() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                // إذا كان البحث فارغاً، عرض جميع المنتجات
+                document.querySelectorAll('.product-card').forEach(card => {
+                    card.style.display = 'block';
+                });
+                return;
             }
-        }
-        
-        // إرسال الطلب إلى التليجرام
-        function sendOrderToTelegram(orderNumber, customerName, customerWilaya, customerAddress, customerPhone, deliveryMethod, deliveryPrice) {
-            const TELEGRAM_BOT_TOKEN = "8291686978:AAHqApsZwfcZv7-pPAPnj5iXsT_ThllvhZA";
-            const TELEGRAM_CHAT_ID = "-1002919459159";
-            const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
             
-            let message = "━━━━━━━━━━━━━━\n";
-            message += `📦 Order #${orderNumber}\n`;
-            message += "━━━━━━━━━━━━━━\n";
-            message += `👤 ${customerName}\n`;
-            message += `🌍 ${customerWilaya}\n`;
-            message += `🏠 ${customerAddress}\n`;
-            message += `📞 ${customerPhone}\n`;
-            message += `🚚 ${deliveryMethod === 'home' ? 'Livraison à domicile' : 'Livraison au bureau'} - ${deliveryPrice} DA\n`;
-            message += "━━━━━━━━━━━━━━\n";
-            message += "🛍️ Products:\n";
-            
-            let subtotal = 0;
-            cart.forEach((item, index) => {
-                const product = products.find(p => p.id === item.id);
-                const itemTotal = item.price * item.quantity;
-                subtotal += itemTotal;
+            document.querySelectorAll('.product-card').forEach(card => {
+                const productName = card.getAttribute('data-name');
                 
-                message += `• ${item.name}\n`;
-                if (item.size) message += `  Taille: ${item.size} | `;
-                if (item.color) message += `Couleur: ${item.color}\n`;
-                message += `  QTY: ${item.quantity} | Price: ${item.price} DA\n`;
-                message += `  Total: ${itemTotal} DA\n`;
+                if (productName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
             });
-            
-            message += "━━━━━━━━━━━━━━\n";
-            message += `💰 Subtotal: ${subtotal} DA\n`;
-            message += `🚚 Delivery: ${deliveryPrice} DA\n`;
-            message += `🔻 Total: ${subtotal + deliveryPrice} DA\n`;
-            message += "━━━━━━━━━━━━━━\n";
-            message += `⏱️ ${new Date().toLocaleString()}\n`;
-            
-            // إرسال الرسالة إلى التليجرام
-            fetch(TELEGRAM_API, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Order sent to Telegram:", data);
-            })
-            .catch(error => {
-                console.error("Error sending order to Telegram:", error);
-            });
+        }
+
+        // إضافة المنتج إلى السلة (وظيفة مساعدة)
+        function addProductToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                addToCart(product, 1, '', '');
+                showNotification('Produit ajouté au panier!', true);
+            }
         }
     </script>
 </body>
